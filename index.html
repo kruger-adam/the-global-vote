@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The Global Vote</title>
+  <title>Should We Build ASI?</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -286,7 +286,7 @@
 
     <header>
       <p class="eyebrow">Hypothetical Global Vote</p>
-      <h1>Would You Release It?</h1>
+      <h1>Should We Build It?</h1>
     </header>
 
     <div id="loading">Loading…</div>
@@ -296,7 +296,7 @@
       <div class="card">
         <p class="scenario-label">The Scenario</p>
         <p class="scenario-body">
-          A superintelligence has been developed. The people building it are confident in the following outcomes if it is released — and they have decided to put it to a global vote. It only gets released if the majority of people vote yes.
+          Experts are confident that they've figured out how to build artificial superintelligence. They're also confident that if they build it, the following outcomes are possible — and they've decided to put it to a global vote. It only gets built if the majority of people vote yes.
         </p>
         <div class="outcome-grid">
           <div class="outcome good">
@@ -310,8 +310,8 @@
         </div>
         <p class="vote-prompt">How would you vote?</p>
         <div class="vote-buttons">
-          <button class="vote-btn release" onclick="castVote('release')">Release It</button>
-          <button class="vote-btn hold"    onclick="castVote('hold')">Don't Release It</button>
+          <button class="vote-btn release" onclick="castVote('release')">Build It</button>
+          <button class="vote-btn hold"    onclick="castVote('hold')">Don't Build It</button>
         </div>
         <p class="error-msg" id="vote-error"></p>
       </div>
@@ -478,7 +478,7 @@
         myVote = vote;
         const badge = document.getElementById('your-vote-badge');
         badge.className   = 'your-vote-badge ' + vote;
-        badge.textContent = 'Your vote: ' + (vote === 'release' ? 'Release It' : "Don't Release It");
+        badge.textContent = 'Your vote: ' + (vote === 'release' ? 'Build It' : "Don't Build It");
         badge.style.display = 'inline-flex';
       }
       if (hasCommented) document.getElementById('comment-form-card').style.display = 'none';
@@ -496,7 +496,7 @@
         return `
         <div class="comment-item${isMine ? ' mine' : ''}">
           <div class="comment-meta">
-            <span class="vote-chip ${c.vote}">${c.vote === 'release' ? 'Release It' : "Don't Release It"}</span>
+            <span class="vote-chip ${c.vote}">${c.vote === 'release' ? 'Build It' : "Don't Build It"}</span>
             <span class="comment-author">${escapeHtml(c.name || 'Anonymous')}</span>
             ${c.timestamp ? `<span class="comment-ts">${timeAgo(c.timestamp.toDate())}</span>` : ''}
             ${isMine ? '<span class="comment-mine-label">You</span>' : ''}
