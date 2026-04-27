@@ -391,16 +391,23 @@
     }
 
     async function fetchResults() {
+      const uuid = getBrowserUUID();
       const votesRef = collection(db, 'votes');
-      const [releaseSnap, holdSnap, commentsSnap] = await Promise.all([
+      const [releaseSnap, holdSnap, commentsSnap, myCommentSnap] = await Promise.all([
         getCountFromServer(query(votesRef, where('vote', '==', 'release'))),
         getCountFromServer(query(votesRef, where('vote', '==', 'hold'))),
         getDocs(query(collection(db, 'comments'), orderBy('timestamp', 'desc'), limit(20))),
+        getDocs(query(collection(db, 'comments'), where('uuid', '==', uuid), limit(1))),
       ]);
+      const comments = commentsSnap.docs.map(d => d.data());
+      const myComment = myCommentSnap.docs[0]?.data() ?? null;
+      if (myComment && !comments.some(c => c.uuid === uuid)) {
+        comments.unshift(myComment);
+      }
       return {
         releaseCount: releaseSnap.data().count,
         holdCount:    holdSnap.data().count,
-        comments:     commentsSnap.docs.map(d => d.data()),
+        comments,
       };
     }
 
