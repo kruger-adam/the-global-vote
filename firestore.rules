@@ -21,7 +21,7 @@ service cloud.firestore {
     match /comments/{commentId} {
       allow read: if true;
 
-      allow create: if request.resource.data.keys().hasOnly(['uuid', 'vote', 'text', 'timestamp'])
+      allow create: if request.resource.data.keys().hasOnly(['uuid', 'vote', 'text', 'timestamp', 'name'])
                     && request.resource.data.text is string
                     && request.resource.data.text.size() > 0
                     && request.resource.data.text.size() <= 500
