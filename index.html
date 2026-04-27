@@ -367,8 +367,8 @@
       collection, query, where, orderBy, limit,
       getDocs, getCountFromServer, serverTimestamp
     } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
-    // ← Paste your Firebase project config here (Firebase console → Project settings → Your apps)
     const firebaseConfig = {
       apiKey:            "AIzaSyA-V0VYy__SfCvbtrTQ8-yKBb6hLyLWpfE",
       authDomain:        "release-asi-poll.firebaseapp.com",
@@ -378,30 +378,24 @@
       appId:             "1:297153700032:web:2f06ef42c4b5a2cf008d25",
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db  = getFirestore(app);
+    const app  = initializeApp(firebaseConfig);
+    const db   = getFirestore(app);
+    const auth = getAuth(app);
 
     let myVote = null;
     let hasCommented = false;
 
-    function getBrowserUUID() {
-      let id = localStorage.getItem('poll_uuid');
-      if (!id) { id = crypto.randomUUID(); localStorage.setItem('poll_uuid', id); }
-      return id;
-    }
-
-    async function fetchResults() {
-      const uuid = getBrowserUUID();
+    async function fetchResults(uid) {
       const votesRef = collection(db, 'votes');
       const [releaseSnap, holdSnap, commentsSnap, myCommentSnap] = await Promise.all([
         getCountFromServer(query(votesRef, where('vote', '==', 'release'))),
         getCountFromServer(query(votesRef, where('vote', '==', 'hold'))),
         getDocs(query(collection(db, 'comments'), orderBy('timestamp', 'desc'), limit(20))),
-        getDocs(query(collection(db, 'comments'), where('uuid', '==', uuid), limit(1))),
+        getDocs(query(collection(db, 'comments'), where('uuid', '==', uid), limit(1))),
       ]);
       const comments = commentsSnap.docs.map(d => d.data());
       const myComment = myCommentSnap.docs[0]?.data() ?? null;
-      if (myComment && !comments.some(c => c.uuid === uuid)) {
+      if (myComment && !comments.some(c => c.uuid === uid)) {
         comments.unshift(myComment);
       }
       return {
@@ -412,18 +406,22 @@
     }
 
     async function init() {
-      if (!localStorage.getItem('poll_voted')) {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('vote-section').style.display = 'block';
-        return;
-      }
       try {
-        const snap = await getDoc(doc(db, 'votes', getBrowserUUID()));
+        await signInAnonymously(auth);
+        const uid = auth.currentUser.uid;
+
+        if (!localStorage.getItem('poll_voted')) {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('vote-section').style.display = 'block';
+          return;
+        }
+
+        const snap = await getDoc(doc(db, 'votes', uid));
         document.getElementById('loading').style.display = 'none';
         if (snap.exists()) {
           myVote       = snap.data().vote;
           hasCommented = snap.data().hasCommented || false;
-          showResults(await fetchResults(), myVote);
+          showResults(await fetchResults(uid), myVote);
         } else {
           localStorage.removeItem('poll_voted');
           document.getElementById('vote-section').style.display = 'block';
@@ -437,7 +435,8 @@
       document.getElementById('vote-error').textContent = '';
       document.querySelectorAll('.vote-btn').forEach(b => b.disabled = true);
       try {
-        await setDoc(doc(db, 'votes', getBrowserUUID()), {
+        const uid = auth.currentUser.uid;
+        await setDoc(doc(db, 'votes', uid), {
           vote,
           timestamp:    serverTimestamp(),
           hasCommented: false,
@@ -445,13 +444,13 @@
         localStorage.setItem('poll_voted', '1');
         myVote = vote;
         document.getElementById('vote-section').style.display = 'none';
-        showResults(await fetchResults(), vote);
+        showResults(await fetchResults(uid), vote);
       } catch (err) {
         if (err.code === 'permission-denied') {
           // Already voted (security rule blocked the overwrite)
           localStorage.setItem('poll_voted', '1');
           document.getElementById('vote-section').style.display = 'none';
-          showResults(await fetchResults(), null);
+          showResults(await fetchResults(auth.currentUser.uid), null);
         } else {
           document.getElementById('vote-error').textContent = 'Something went wrong. Please try again.';
           document.querySelectorAll('.vote-btn').forEach(b => b.disabled = false);
@@ -490,9 +489,9 @@
       const card = document.getElementById('comments-feed-card');
       if (!comments || comments.length === 0) { card.style.display = 'none'; return; }
       card.style.display = 'block';
-      const myUuid = getBrowserUUID();
+      const myUid = auth.currentUser?.uid;
       feed.innerHTML = comments.map(c => {
-        const isMine = c.uuid === myUuid;
+        const isMine = c.uuid === myUid;
         return `
         <div class="comment-item${isMine ? ' mine' : ''}">
           <div class="comment-meta">
@@ -518,16 +517,16 @@
       document.getElementById('comment-submit').disabled = true;
       document.getElementById('comment-error').textContent = '';
       try {
-        const uuid = getBrowserUUID();
+        const uid  = auth.currentUser.uid;
         const name = document.getElementById('name-input').value.trim();
         await Promise.all([
-          addDoc(collection(db, 'comments'), { uuid, vote: myVote, text, name, timestamp: serverTimestamp() }),
-          updateDoc(doc(db, 'votes', uuid), { hasCommented: true }),
+          addDoc(collection(db, 'comments'), { uuid: uid, vote: myVote, text, name, timestamp: serverTimestamp() }),
+          updateDoc(doc(db, 'votes', uid), { hasCommented: true }),
         ]);
         hasCommented = true;
         document.getElementById('comment-form-card').style.display = 'none';
         document.getElementById('comment-success').style.display = 'block';
-        renderComments((await fetchResults()).comments);
+        renderComments((await fetchResults(uid)).comments);
       } catch {
         document.getElementById('comment-error').textContent = 'Something went wrong. Please try again.';
         document.getElementById('comment-submit').disabled = false;
@@ -547,8 +546,8 @@
     }
 
     // Expose to HTML onclick handlers (required for type="module" scripts)
-    window.castVote      = castVote;
-    window.submitComment = submitComment;
+    window.castVote       = castVote;
+    window.submitComment  = submitComment;
     window.onCommentInput = onCommentInput;
 
     init();
