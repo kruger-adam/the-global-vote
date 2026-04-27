@@ -357,6 +357,12 @@
     .comment-mine-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-left: auto; }
     .comment-item.mine { background: var(--accent-dim); border: 1px solid rgba(108,99,255,0.25); border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.5rem; }
 
+    .voter-list { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.1rem; }
+    .voter-pill { display: inline-flex; align-items: center; gap: 0.35rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 99px; padding: 0.2rem 0.65rem 0.2rem 0.45rem; font-size: 0.78rem; font-weight: 500; color: var(--text); }
+    .voter-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .voter-dot.release { background: var(--release); }
+    .voter-dot.hold    { background: var(--hold); }
+
     .name-input {
       width: 100%;
       background: var(--surface2);
@@ -434,6 +440,7 @@
           </details>
         </div>
         <p class="vote-prompt">How would you vote?</p>
+        <input type="text" class="name-input" id="vote-name-input" maxlength="50" placeholder="Your name (optional)" style="margin-bottom:1rem">
         <div class="vote-buttons">
           <button class="vote-btn release" onclick="castVote('release')">Build It</button>
           <button class="vote-btn hold"    onclick="castVote('hold')">Don't Build It</button>
@@ -463,6 +470,11 @@
             <span class="result-count" id="count-hold">0 votes</span>
           </div>
           <div class="bar-track"><div class="bar-fill bar-hold" id="bar-hold"></div></div>
+        </div>
+        <div id="voters-section" style="display:none">
+          <div style="border-top:1px solid var(--border);margin:1.25rem 0 1rem"></div>
+          <p class="section-label">Who voted</p>
+          <div class="voter-list" id="voters-feed"></div>
         </div>
       </div>
 
@@ -512,11 +524,12 @@
 
     async function fetchResults(uid) {
       const votesRef = collection(db, 'votes');
-      const [releaseSnap, holdSnap, commentsSnap, myCommentSnap] = await Promise.all([
+      const [releaseSnap, holdSnap, commentsSnap, myCommentSnap, namedVotersSnap] = await Promise.all([
         getCountFromServer(query(votesRef, where('vote', '==', 'release'))),
         getCountFromServer(query(votesRef, where('vote', '==', 'hold'))),
         getDocs(query(collection(db, 'comments'), orderBy('timestamp', 'desc'), limit(20))),
         getDocs(query(collection(db, 'comments'), where('uuid', '==', uid), limit(1))),
+        getDocs(query(collection(db, 'named_voters'), orderBy('timestamp', 'desc'), limit(50))),
       ]);
       const comments = commentsSnap.docs.map(d => d.data());
       const myComment = myCommentSnap.docs[0]?.data() ?? null;
@@ -527,6 +540,7 @@
         releaseCount: releaseSnap.data().count,
         holdCount:    holdSnap.data().count,
         comments,
+        namedVoters: namedVotersSnap.docs.map(d => d.data()),
       };
     }
 
@@ -560,19 +574,22 @@
       document.getElementById('vote-error').textContent = '';
       document.querySelectorAll('.vote-btn').forEach(b => b.disabled = true);
       try {
-        const uid = auth.currentUser.uid;
+        const uid  = auth.currentUser.uid;
+        const name = document.getElementById('vote-name-input').value.trim();
         await setDoc(doc(db, 'votes', uid), {
           vote,
           timestamp:    serverTimestamp(),
           hasCommented: false,
         });
+        if (name) {
+          await addDoc(collection(db, 'named_voters'), { vote, name, timestamp: serverTimestamp() });
+        }
         localStorage.setItem('poll_voted', '1');
         myVote = vote;
         document.getElementById('vote-section').style.display = 'none';
         showResults(await fetchResults(uid), vote);
       } catch (err) {
         if (err.code === 'permission-denied') {
-          // Already voted (security rule blocked the overwrite)
           localStorage.setItem('poll_voted', '1');
           document.getElementById('vote-section').style.display = 'none';
           showResults(await fetchResults(auth.currentUser.uid), null);
@@ -583,7 +600,7 @@
       }
     }
 
-    function showResults({ releaseCount, holdCount, comments }, vote) {
+    function showResults({ releaseCount, holdCount, comments, namedVoters }, vote) {
       document.getElementById('results-section').style.display = 'block';
       const total = releaseCount + holdCount;
       document.getElementById('total-badge').textContent =
@@ -606,7 +623,17 @@
         badge.style.display = 'inline-flex';
       }
       if (hasCommented) document.getElementById('comment-form-card').style.display = 'none';
+      renderVoters(namedVoters);
       renderComments(comments);
+    }
+
+    function renderVoters(voters) {
+      const section = document.getElementById('voters-section');
+      if (!voters || voters.length === 0) { section.style.display = 'none'; return; }
+      section.style.display = 'block';
+      document.getElementById('voters-feed').innerHTML = voters.map(v =>
+        `<span class="voter-pill"><span class="voter-dot ${v.vote}"></span>${escapeHtml(v.name)}</span>`
+      ).join('');
     }
 
     function renderComments(comments) {
