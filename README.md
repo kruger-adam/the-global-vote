@@ -1,8 +1,8 @@
-# The Global Vote
+# Should We Build ASI?
 
 A one-question poll: *would you vote to release a superintelligence given a 90% chance of utopia and a 10% chance of extinction?*
 
-**Live:** https://kruger-adam.github.io/the-global-vote/
+**Live:** https://kruger-adam.github.io/should-we-build-asi/
 
 ## How it works
 
