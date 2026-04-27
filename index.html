@@ -121,6 +121,32 @@
 
     .vote-prompt { font-size: 1.05rem; font-weight: 700; text-align: center; margin-bottom: 1.25rem; color: #fff; }
 
+    .context-box {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .context-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #a0a0e8;
+      margin-bottom: 0.55rem;
+    }
+
+    .context-copy {
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: #c8c8e0;
+      margin-bottom: 0.55rem;
+    }
+
+    .context-copy:last-child { margin-bottom: 0; }
+
     .vote-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
     @media (max-width: 420px) { .vote-buttons { grid-template-columns: 1fr; } }
@@ -307,6 +333,15 @@
             <span class="outcome-pct">10%</span>
             <span>Extinction — every human being on Earth is killed.</span>
           </div>
+        </div>
+        <div class="context-box">
+          <p class="context-title">Why this is not purely hypothetical</p>
+          <p class="context-copy">
+            Leading AI researchers and CEOs have publicly discussed non-trivial catastrophic risk from advanced AI, with some estimating existential risk in the 10%-20% range.
+          </p>
+          <p class="context-copy">
+            The same people building frontier systems increasingly suggest that AGI-level or "powerful AI" capability could arrive within years, not centuries.
+          </p>
         </div>
         <p class="vote-prompt">How would you vote?</p>
         <div class="vote-buttons">
