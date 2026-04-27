@@ -7,7 +7,7 @@ A one-question poll: *would you vote to release a superintelligence given a 90% 
 ## How it works
 
 - Single `index.html` — no build step, no dependencies
-- Votes and comments are stored in [Firebase Firestore](https://firebase.google.com/products/firestore)
+- Votes and comments are stored together in a single `votes` collection in [Firebase Firestore](https://firebase.google.com/products/firestore) — each document is keyed by user UID and optionally includes a `name`, `comment`, and `commentedAt` field
 - Deduplication is enforced both client-side (localStorage UUID) and server-side (Firestore security rules block overwriting an existing vote document)
 
 ## Running your own instance

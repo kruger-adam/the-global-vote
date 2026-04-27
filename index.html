@@ -500,7 +500,7 @@
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
     import {
-      getFirestore, doc, getDoc, setDoc, addDoc, updateDoc,
+      getFirestore, doc, getDoc, setDoc, updateDoc,
       collection, query, where, orderBy, limit,
       getDocs, getCountFromServer, serverTimestamp
     } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
@@ -520,21 +520,21 @@
     const auth = getAuth(app);
 
     let myVote = null;
-    let hasCommented = false;
+    let hasComment = false;
 
     async function fetchResults(uid) {
       const votesRef = collection(db, 'votes');
-      const [releaseSnap, holdSnap, commentsSnap, myCommentSnap, namedVotersSnap] = await Promise.all([
+      const [releaseSnap, holdSnap, commentsSnap, namedVotersSnap] = await Promise.all([
         getCountFromServer(query(votesRef, where('vote', '==', 'release'))),
         getCountFromServer(query(votesRef, where('vote', '==', 'hold'))),
-        getDocs(query(collection(db, 'comments'), orderBy('timestamp', 'desc'), limit(20))),
-        getDocs(query(collection(db, 'comments'), where('uuid', '==', uid), limit(1))),
+        getDocs(query(votesRef, orderBy('commentedAt', 'desc'), limit(20))),
         getDocs(query(votesRef, where('name', '>', ''), orderBy('name'), limit(50))),
       ]);
-      const comments = commentsSnap.docs.map(d => d.data());
-      const myComment = myCommentSnap.docs[0]?.data() ?? null;
-      if (myComment && !comments.some(c => c.uuid === uid)) {
-        comments.unshift(myComment);
+      const comments = commentsSnap.docs.map(d => ({ ...d.data(), uuid: d.id }));
+      if (uid && !comments.some(c => c.uuid === uid)) {
+        const mySnap = await getDoc(doc(db, 'votes', uid));
+        const myData = mySnap.data();
+        if (myData?.commentedAt) comments.unshift({ ...myData, uuid: uid });
       }
       return {
         releaseCount: releaseSnap.data().count,
@@ -558,8 +558,8 @@
         const snap = await getDoc(doc(db, 'votes', uid));
         document.getElementById('loading').style.display = 'none';
         if (snap.exists()) {
-          myVote       = snap.data().vote;
-          hasCommented = snap.data().hasCommented || false;
+          myVote     = snap.data().vote;
+          hasComment = !!snap.data().commentedAt;
           showResults(await fetchResults(uid), myVote);
         } else {
           localStorage.removeItem('poll_voted');
@@ -576,7 +576,7 @@
       try {
         const uid  = auth.currentUser.uid;
         const name = document.getElementById('vote-name-input').value.trim();
-        const voteDoc = { vote, timestamp: serverTimestamp(), hasCommented: false };
+        const voteDoc = { vote, timestamp: serverTimestamp() };
         if (name) voteDoc.name = name;
         await setDoc(doc(db, 'votes', uid), voteDoc);
         localStorage.setItem('poll_voted', '1');
@@ -617,7 +617,7 @@
         badge.textContent = 'Your vote: ' + (vote === 'release' ? 'Build It' : "Don't Build It");
         badge.style.display = 'inline-flex';
       }
-      if (hasCommented) document.getElementById('comment-form-card').style.display = 'none';
+      if (hasComment) document.getElementById('comment-form-card').style.display = 'none';
       renderVoters(namedVoters);
       renderComments(comments);
     }
@@ -644,10 +644,10 @@
           <div class="comment-meta">
             <span class="vote-chip ${c.vote}">${c.vote === 'release' ? 'Build It' : "Don't Build It"}</span>
             <span class="comment-author">${escapeHtml(c.name || 'Anonymous')}</span>
-            ${c.timestamp ? `<span class="comment-ts">${timeAgo(c.timestamp.toDate())}</span>` : ''}
+            ${c.commentedAt ? `<span class="comment-ts">${timeAgo(c.commentedAt.toDate())}</span>` : ''}
             ${isMine ? '<span class="comment-mine-label">You</span>' : ''}
           </div>
-          <p class="comment-text">${escapeHtml(c.text)}</p>
+          <p class="comment-text">${escapeHtml(c.comment)}</p>
         </div>`;
       }).join('');
     }
@@ -666,11 +666,10 @@
       try {
         const uid  = auth.currentUser.uid;
         const name = document.getElementById('name-input').value.trim();
-        await Promise.all([
-          addDoc(collection(db, 'comments'), { uuid: uid, vote: myVote, text, name, timestamp: serverTimestamp() }),
-          updateDoc(doc(db, 'votes', uid), { hasCommented: true }),
-        ]);
-        hasCommented = true;
+        const fields = { comment: text, commentedAt: serverTimestamp() };
+        if (name) fields.name = name;
+        await updateDoc(doc(db, 'votes', uid), fields);
+        hasComment = true;
         document.getElementById('comment-form-card').style.display = 'none';
         document.getElementById('comment-success').style.display = 'block';
         renderComments((await fetchResults(uid)).comments);
