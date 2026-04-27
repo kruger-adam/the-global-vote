@@ -198,6 +198,26 @@
     .quotes-list li:last-child { margin-bottom: 0; }
     .quote-who { color: var(--text); font-weight: 700; }
     .quote-what { color: #c8c8e0; }
+    .quote-src { color: #a0a0e8; font-size: 0.78em; margin-left: 0.2rem; }
+
+    .quotes-sources {
+      margin-top: 0.8rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 0.8rem;
+      font-size: 0.78rem;
+      line-height: 1.4;
+    }
+
+    .quotes-sources a {
+      color: #a0a0e8;
+      text-decoration: none;
+      border-bottom: 1px dotted rgba(160,160,232,0.6);
+    }
+
+    .quotes-sources a:hover { color: #c6c6ff; border-bottom-color: rgba(198,198,255,0.8); }
 
     .vote-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
@@ -397,17 +417,23 @@
           <details class="context-details">
             <summary><span class="context-chevron" aria-hidden="true"></span>Show quotes</summary>
             <p class="quotes-note">
-              Quotes are included for context and may be lightly edited for brevity. Sources/links can be added later.
+              Quotes are included for context and may be lightly edited for brevity. Source links are listed below.
             </p>
             <ul class="quotes-list">
-              <li><span class="quote-who">Geoffrey Hinton:</span> <span class="quote-what">“I think it’s somewhere between 10% and 20% chance that it will wipe us out.”</span></li>
-              <li><span class="quote-who">Yoshua Bengio:</span> <span class="quote-what">“We’re playing with fire… we still don’t have the scientific answers nor the societal guardrails.”</span></li>
-              <li><span class="quote-who">Elon Musk:</span> <span class="quote-what">“It’s most likely going to be great and there’s some chance — which could be 10% to 20% — that it goes bad.”</span></li>
-              <li><span class="quote-who">Dario Amodei:</span> <span class="quote-what">“At the extreme end is the fear that an AGI could destroy humanity. I can’t see any reason in principle why that couldn’t happen.”</span></li>
-              <li><span class="quote-who">Sam Altman:</span> <span class="quote-what">“In five years… the pace of progress is totally crazy… people are like, ‘the AGI moment came and went.’”</span></li>
-              <li><span class="quote-who">Demis Hassabis:</span> <span class="quote-what">“AGI is still 5–10 years away” and may require “one or two” additional breakthroughs.</span></li>
-              <li><span class="quote-who">Dario Amodei (timeline):</span> <span class="quote-what">Powerful AI “could come as early as 2026.”</span></li>
+              <li><span class="quote-who">Geoffrey Hinton:</span> <span class="quote-what">“I think it’s somewhere between 10% and 20% chance that it will wipe us out.”</span><span class="quote-src">[1]</span></li>
+              <li><span class="quote-who">Yoshua Bengio:</span> <span class="quote-what">“We’re playing with fire… we still don’t have the scientific answers nor the societal guardrails.”</span><span class="quote-src">[2]</span></li>
+              <li><span class="quote-who">Elon Musk:</span> <span class="quote-what">“It’s most likely going to be great and there’s some chance — which could be 10% to 20% — that it goes bad.”</span><span class="quote-src">[3]</span></li>
+              <li><span class="quote-who">Dario Amodei:</span> <span class="quote-what">“At the extreme end is the fear that an AGI could destroy humanity. I can’t see any reason in principle why that couldn’t happen.”</span><span class="quote-src">[2]</span></li>
+              <li><span class="quote-who">Sam Altman:</span> <span class="quote-what">“In five years… the pace of progress is totally crazy… people are like, ‘the AGI moment came and went.’”</span><span class="quote-src">[3]</span></li>
+              <li><span class="quote-who">Demis Hassabis:</span> <span class="quote-what">“AGI is still 5–10 years away” and may require “one or two” additional breakthroughs.</span><span class="quote-src">[4]</span></li>
+              <li><span class="quote-who">Dario Amodei (timeline):</span> <span class="quote-what">Powerful AI “could come as early as 2026.”</span><span class="quote-src">[4]</span></li>
             </ul>
+            <div class="quotes-sources">
+              <a href="https://www.theguardian.com/technology/2024/dec/27/godfather-of-ai-raises-odds-of-the-technology-wiping-out-humanity-over-next-30-years" target="_blank" rel="noopener noreferrer">[1] Guardian (Hinton)</a>
+              <a href="https://www.abc.net.au/news/2023-07-15/whats-your-pdoom-ai-researchers-worry-catastrophe/102591340" target="_blank" rel="noopener noreferrer">[2] ABC News (p(doom), Bengio)</a>
+              <a href="https://x.com/liron/status/1710520914444718459" target="_blank" rel="noopener noreferrer">[3] X thread / clip</a>
+              <a href="https://www.youtube.com/watch?v=akXMYvKjUxM" target="_blank" rel="noopener noreferrer">[4] YouTube source</a>
+            </div>
           </details>
         </div>
         <p class="vote-prompt">How would you vote?</p>
