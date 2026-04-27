@@ -253,8 +253,25 @@
     .vote-chip.release { background: var(--release-dim); color: var(--release); }
     .vote-chip.hold    { background: var(--hold-dim);    color: var(--hold); }
 
-    .comment-ts   { font-size: 0.72rem; color: var(--muted); }
-    .comment-text { font-size: 0.9rem; line-height: 1.6; color: #c8c8e0; }
+    .comment-ts     { font-size: 0.72rem; color: var(--muted); }
+    .comment-author { font-size: 0.78rem; font-weight: 600; color: var(--text); }
+    .comment-text   { font-size: 0.9rem; line-height: 1.6; color: #c8c8e0; }
+
+    .name-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      padding: 0.7rem 1rem;
+      outline: none;
+      transition: border-color 0.15s;
+      margin-bottom: 0.75rem;
+    }
+    .name-input:focus { border-color: var(--accent); }
+    .name-input::placeholder { color: var(--subtle); }
 
     #loading { text-align: center; color: var(--muted); font-size: 0.9rem; padding: 3rem 0; }
 
@@ -324,6 +341,7 @@
 
       <div class="card" id="comment-form-card">
         <p class="section-label">Why did you vote that way? <span style="color:var(--subtle);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></p>
+        <input type="text" class="name-input" id="name-input" maxlength="50" placeholder="Your name (optional)">
         <textarea id="comment-input" maxlength="500" placeholder="Share your reasoning…" oninput="onCommentInput()"></textarea>
         <div class="char-count"><span id="char-count">0</span> / 500</div>
         <button class="submit-btn" id="comment-submit" onclick="submitComment()" disabled>Post Comment</button>
@@ -467,6 +485,7 @@
         <div class="comment-item">
           <div class="comment-meta">
             <span class="vote-chip ${c.vote}">${c.vote === 'release' ? 'Release It' : "Don't Release It"}</span>
+            <span class="comment-author">${escapeHtml(c.name || 'Anonymous')}</span>
             ${c.timestamp ? `<span class="comment-ts">${timeAgo(c.timestamp.toDate())}</span>` : ''}
           </div>
           <p class="comment-text">${escapeHtml(c.text)}</p>
@@ -486,8 +505,9 @@
       document.getElementById('comment-error').textContent = '';
       try {
         const uuid = getBrowserUUID();
+        const name = document.getElementById('name-input').value.trim();
         await Promise.all([
-          addDoc(collection(db, 'comments'), { uuid, vote: myVote, text, timestamp: serverTimestamp() }),
+          addDoc(collection(db, 'comments'), { uuid, vote: myVote, text, name, timestamp: serverTimestamp() }),
           updateDoc(doc(db, 'votes', uuid), { hasCommented: true }),
         ]);
         hasCommented = true;
