@@ -529,7 +529,7 @@
         getCountFromServer(query(votesRef, where('vote', '==', 'hold'))),
         getDocs(query(collection(db, 'comments'), orderBy('timestamp', 'desc'), limit(20))),
         getDocs(query(collection(db, 'comments'), where('uuid', '==', uid), limit(1))),
-        getDocs(query(collection(db, 'named_voters'), orderBy('timestamp', 'desc'), limit(50))),
+        getDocs(query(votesRef, where('name', '>', ''), orderBy('name'), limit(50))),
       ]);
       const comments = commentsSnap.docs.map(d => d.data());
       const myComment = myCommentSnap.docs[0]?.data() ?? null;
@@ -576,14 +576,9 @@
       try {
         const uid  = auth.currentUser.uid;
         const name = document.getElementById('vote-name-input').value.trim();
-        await setDoc(doc(db, 'votes', uid), {
-          vote,
-          timestamp:    serverTimestamp(),
-          hasCommented: false,
-        });
-        if (name) {
-          await addDoc(collection(db, 'named_voters'), { vote, name, timestamp: serverTimestamp() });
-        }
+        const voteDoc = { vote, timestamp: serverTimestamp(), hasCommented: false };
+        if (name) voteDoc.name = name;
+        await setDoc(doc(db, 'votes', uid), voteDoc);
         localStorage.setItem('poll_voted', '1');
         myVote = vote;
         document.getElementById('vote-section').style.display = 'none';
