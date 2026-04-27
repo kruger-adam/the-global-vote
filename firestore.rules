@@ -37,5 +37,19 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    match /named_voters/{voterId} {
+      allow read: if true;
+
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasOnly(['vote', 'name', 'timestamp'])
+                    && request.resource.data.vote in ['release', 'hold']
+                    && request.resource.data.name is string
+                    && request.resource.data.name.size() > 0
+                    && request.resource.data.name.size() <= 50;
+
+      allow update: if false;
+      allow delete: if false;
+    }
+
   }
 }
