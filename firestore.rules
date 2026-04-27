@@ -5,13 +5,17 @@ service cloud.firestore {
     match /votes/{uuid} {
       allow read: if true;
 
-      // One vote per UUID — `create` only fires when the document doesn't exist yet
-      allow create: if request.resource.data.keys().hasOnly(['vote', 'timestamp', 'hasCommented'])
+      // Voter must be authenticated and their Firebase Auth UID must match the document ID
+      allow create: if request.auth != null
+                    && request.auth.uid == uuid
+                    && request.resource.data.keys().hasOnly(['vote', 'timestamp', 'hasCommented'])
                     && request.resource.data.vote in ['release', 'hold']
                     && request.resource.data.hasCommented == false;
 
       // Only allowed update: flipping hasCommented false → true (after posting a comment)
-      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasCommented'])
+      allow update: if request.auth != null
+                    && request.auth.uid == uuid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasCommented'])
                     && resource.data.hasCommented == false
                     && request.resource.data.hasCommented == true;
 
@@ -21,7 +25,9 @@ service cloud.firestore {
     match /comments/{commentId} {
       allow read: if true;
 
-      allow create: if request.resource.data.keys().hasOnly(['uuid', 'vote', 'text', 'timestamp', 'name'])
+      allow create: if request.auth != null
+                    && request.resource.data.uuid == request.auth.uid
+                    && request.resource.data.keys().hasOnly(['uuid', 'vote', 'text', 'timestamp', 'name'])
                     && request.resource.data.text is string
                     && request.resource.data.text.size() > 0
                     && request.resource.data.text.size() <= 500
