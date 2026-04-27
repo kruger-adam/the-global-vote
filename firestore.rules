@@ -5,14 +5,13 @@ service cloud.firestore {
     match /votes/{uuid} {
       allow read: if true;
 
-      // Voter must be authenticated and their Firebase Auth UID must match the document ID
       allow create: if request.auth != null
                     && request.auth.uid == uuid
-                    && request.resource.data.keys().hasOnly(['vote', 'timestamp', 'hasCommented'])
+                    && request.resource.data.keys().hasOnly(['vote', 'timestamp', 'hasCommented', 'name'])
                     && request.resource.data.vote in ['release', 'hold']
-                    && request.resource.data.hasCommented == false;
+                    && request.resource.data.hasCommented == false
+                    && (!('name' in request.resource.data) || (request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 50));
 
-      // Only allowed update: flipping hasCommented false → true (after posting a comment)
       allow update: if request.auth != null
                     && request.auth.uid == uuid
                     && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hasCommented'])
@@ -32,20 +31,6 @@ service cloud.firestore {
                     && request.resource.data.text.size() > 0
                     && request.resource.data.text.size() <= 500
                     && request.resource.data.vote in ['release', 'hold'];
-
-      allow update: if false;
-      allow delete: if false;
-    }
-
-    match /named_voters/{voterId} {
-      allow read: if true;
-
-      allow create: if request.auth != null
-                    && request.resource.data.keys().hasOnly(['vote', 'name', 'timestamp'])
-                    && request.resource.data.vote in ['release', 'hold']
-                    && request.resource.data.name is string
-                    && request.resource.data.name.size() > 0
-                    && request.resource.data.name.size() <= 50;
 
       allow update: if false;
       allow delete: if false;
