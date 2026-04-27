@@ -373,14 +373,23 @@
     }
 
     async function init() {
-      const uuid = getBrowserUUID();
+      if (!localStorage.getItem('poll_voted')) {
+        // Haven't voted yet — show poll immediately, no network request needed
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('vote-section').style.display = 'block';
+        return;
+      }
+
+      // Already voted — fetch current results
       try {
-        const data = await appsGet({ uuid });
+        const data = await appsGet({ uuid: getBrowserUUID() });
         document.getElementById('loading').style.display = 'none';
         if (data.has_voted) {
           hasCommented = data.has_commented;
           showResults(data, null);
         } else {
+          // Server doesn't recognise us (e.g. sheet was reset) — show poll
+          localStorage.removeItem('poll_voted');
           document.getElementById('vote-section').style.display = 'block';
         }
       } catch (e) {
@@ -399,6 +408,7 @@
           throw new Error(data.error);
         }
 
+        localStorage.setItem('poll_voted', '1');
         myVote = vote;
         hasCommented = data.has_commented || false;
         document.getElementById('vote-section').style.display = 'none';
