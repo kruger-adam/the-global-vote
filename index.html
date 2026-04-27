@@ -147,6 +147,58 @@
 
     .context-copy:last-child { margin-bottom: 0; }
 
+    details.context-details {
+      margin-top: 0.8rem;
+      border-top: 1px solid var(--border);
+      padding-top: 0.8rem;
+    }
+
+    details.context-details > summary {
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text);
+      list-style: none;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    details.context-details > summary::-webkit-details-marker { display: none; }
+
+    .context-chevron {
+      width: 0.65rem;
+      height: 0.65rem;
+      border-right: 2px solid var(--muted);
+      border-bottom: 2px solid var(--muted);
+      transform: rotate(-45deg);
+      transition: transform 0.15s ease;
+      margin-top: 0.05rem;
+    }
+
+    details.context-details[open] .context-chevron { transform: rotate(45deg); }
+
+    .quotes-note {
+      margin-top: 0.6rem;
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .quotes-list {
+      margin-top: 0.8rem;
+      padding-left: 1.05rem;
+      color: #c8c8e0;
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+
+    .quotes-list li { margin-bottom: 0.55rem; }
+    .quotes-list li:last-child { margin-bottom: 0; }
+    .quote-who { color: var(--text); font-weight: 700; }
+    .quote-what { color: #c8c8e0; }
+
     .vote-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 
     @media (max-width: 420px) { .vote-buttons { grid-template-columns: 1fr; } }
@@ -342,6 +394,21 @@
           <p class="context-copy">
             The same people building frontier systems increasingly suggest that AGI-level or "powerful AI" capability could arrive within years, not centuries.
           </p>
+          <details class="context-details">
+            <summary><span class="context-chevron" aria-hidden="true"></span>Show quotes</summary>
+            <p class="quotes-note">
+              Quotes are included for context and may be lightly edited for brevity. Sources/links can be added later.
+            </p>
+            <ul class="quotes-list">
+              <li><span class="quote-who">Geoffrey Hinton:</span> <span class="quote-what">“I think it’s somewhere between 10% and 20% chance that it will wipe us out.”</span></li>
+              <li><span class="quote-who">Yoshua Bengio:</span> <span class="quote-what">“We’re playing with fire… we still don’t have the scientific answers nor the societal guardrails.”</span></li>
+              <li><span class="quote-who">Elon Musk:</span> <span class="quote-what">“It’s most likely going to be great and there’s some chance — which could be 10% to 20% — that it goes bad.”</span></li>
+              <li><span class="quote-who">Dario Amodei:</span> <span class="quote-what">“At the extreme end is the fear that an AGI could destroy humanity. I can’t see any reason in principle why that couldn’t happen.”</span></li>
+              <li><span class="quote-who">Sam Altman:</span> <span class="quote-what">“In five years… the pace of progress is totally crazy… people are like, ‘the AGI moment came and went.’”</span></li>
+              <li><span class="quote-who">Demis Hassabis:</span> <span class="quote-what">“AGI is still 5–10 years away” and may require “one or two” additional breakthroughs.</span></li>
+              <li><span class="quote-who">Dario Amodei (timeline):</span> <span class="quote-what">Powerful AI “could come as early as 2026.”</span></li>
+            </ul>
+          </details>
         </div>
         <p class="vote-prompt">How would you vote?</p>
         <div class="vote-buttons">
