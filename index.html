@@ -256,6 +256,8 @@
     .comment-ts     { font-size: 0.72rem; color: var(--muted); }
     .comment-author { font-size: 0.78rem; font-weight: 600; color: var(--text); }
     .comment-text   { font-size: 0.9rem; line-height: 1.6; color: #c8c8e0; }
+    .comment-mine-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-left: auto; }
+    .comment-item.mine { background: var(--accent-dim); border: 1px solid rgba(108,99,255,0.25); border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.5rem; }
 
     .name-input {
       width: 100%;
@@ -414,7 +416,7 @@
         if (snap.exists()) {
           myVote       = snap.data().vote;
           hasCommented = snap.data().hasCommented || false;
-          showResults(await fetchResults(), null);
+          showResults(await fetchResults(), myVote);
         } else {
           localStorage.removeItem('poll_voted');
           document.getElementById('vote-section').style.display = 'block';
@@ -481,15 +483,20 @@
       const card = document.getElementById('comments-feed-card');
       if (!comments || comments.length === 0) { card.style.display = 'none'; return; }
       card.style.display = 'block';
-      feed.innerHTML = comments.map(c => `
-        <div class="comment-item">
+      const myUuid = getBrowserUUID();
+      feed.innerHTML = comments.map(c => {
+        const isMine = c.uuid === myUuid;
+        return `
+        <div class="comment-item${isMine ? ' mine' : ''}">
           <div class="comment-meta">
             <span class="vote-chip ${c.vote}">${c.vote === 'release' ? 'Release It' : "Don't Release It"}</span>
             <span class="comment-author">${escapeHtml(c.name || 'Anonymous')}</span>
             ${c.timestamp ? `<span class="comment-ts">${timeAgo(c.timestamp.toDate())}</span>` : ''}
+            ${isMine ? '<span class="comment-mine-label">You</span>' : ''}
           </div>
           <p class="comment-text">${escapeHtml(c.text)}</p>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     }
 
     function onCommentInput() {
