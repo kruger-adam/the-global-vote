@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Global Vote</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #080810;
+      --surface: #10101e;
+      --surface2: #18182a;
+      --border: #252540;
+      --accent: #6c63ff;
+      --accent-dim: rgba(108,99,255,0.15);
+      --release: #4ade80;
+      --release-dim: rgba(74,222,128,0.12);
+      --hold: #f87171;
+      --hold-dim: rgba(248,113,113,0.12);
+      --text: #e8e8f2;
+      --muted: #7878a0;
+      --subtle: #3a3a60;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2.5rem 1rem 5rem;
+    }
+
+    .glow {
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 15% 60%, rgba(108,99,255,0.08) 0%, transparent 55%),
+        radial-gradient(ellipse at 85% 15%, rgba(255,101,132,0.05) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .container { position: relative; z-index: 1; width: 100%; max-width: 660px; }
+
+    header { text-align: center; margin-bottom: 2.5rem; }
+
+    .eyebrow {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.6rem;
+    }
+
+    h1 {
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-weight: 800;
+      line-height: 1.15;
+      background: linear-gradient(140deg, #fff 35%, #a0a0e8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 2rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .scenario-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1rem;
+    }
+
+    .scenario-body {
+      font-size: 1rem;
+      line-height: 1.75;
+      color: #c8c8e0;
+      margin-bottom: 1.5rem;
+    }
+
+    .outcome-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      margin-bottom: 1.75rem;
+    }
+
+    @media (max-width: 420px) { .outcome-grid { grid-template-columns: 1fr; } }
+
+    .outcome {
+      border-radius: 12px;
+      padding: 1rem 1.1rem;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    .outcome.good { background: var(--release-dim); border: 1px solid rgba(74,222,128,0.25); }
+    .outcome.bad  { background: var(--hold-dim);    border: 1px solid rgba(248,113,113,0.25); }
+
+    .outcome-pct {
+      font-size: 1.5rem;
+      font-weight: 800;
+      display: block;
+      margin-bottom: 0.3rem;
+    }
+
+    .outcome.good .outcome-pct { color: var(--release); }
+    .outcome.bad  .outcome-pct { color: var(--hold); }
+
+    .vote-prompt { font-size: 1.05rem; font-weight: 700; text-align: center; margin-bottom: 1.25rem; color: #fff; }
+
+    .vote-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+
+    @media (max-width: 420px) { .vote-buttons { grid-template-columns: 1fr; } }
+
+    .vote-btn {
+      padding: 1rem;
+      border-radius: 12px;
+      border: 2px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .vote-btn:hover { transform: translateY(-2px); }
+    .vote-btn.release { border-color: var(--release); color: var(--release); background: var(--release-dim); }
+    .vote-btn.hold    { border-color: var(--hold);    color: var(--hold);    background: var(--hold-dim); }
+    .vote-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    .error-msg { color: var(--hold); font-size: 0.85rem; text-align: center; margin-top: 0.75rem; }
+
+    /* Results */
+    #results-section { display: none; }
+
+    .results-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+    .results-title { font-size: 1rem; font-weight: 700; }
+
+    .total-badge {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border-radius: 99px;
+      padding: 0.2rem 0.7rem;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .your-vote-badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 99px;
+      padding: 0.25rem 0.7rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+    }
+
+    .your-vote-badge.release { background: var(--release-dim); color: var(--release); border: 1px solid rgba(74,222,128,0.3); }
+    .your-vote-badge.hold    { background: var(--hold-dim);    color: var(--hold);    border: 1px solid rgba(248,113,113,0.3); }
+
+    .result-row { margin-bottom: 1.1rem; }
+
+    .result-row-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 0.4rem;
+    }
+
+    .result-count { color: var(--muted); }
+
+    .bar-track { background: rgba(255,255,255,0.05); border-radius: 99px; height: 12px; overflow: hidden; }
+
+    .bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 0%;
+    }
+
+    .bar-release { background: linear-gradient(90deg, #4ade80, #22d3ee); }
+    .bar-hold    { background: linear-gradient(90deg, #f87171, #fb923c); }
+
+    /* Comments */
+    .section-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+
+    textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      padding: 0.8rem 1rem;
+      resize: vertical;
+      min-height: 90px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    textarea:focus { border-color: var(--accent); }
+    textarea::placeholder { color: var(--subtle); }
+
+    .char-count { text-align: right; font-size: 0.72rem; color: var(--muted); margin-top: 0.3rem; margin-bottom: 0.6rem; }
+
+    .submit-btn {
+      padding: 0.7rem 1.4rem;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .submit-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+    .submit-btn:not(:disabled):hover { opacity: 0.85; transform: translateY(-1px); }
+
+    .comment-success { color: var(--release); font-size: 0.85rem; margin-top: 0.5rem; font-weight: 600; }
+
+    .comment-item { padding: 1rem 0; border-bottom: 1px solid var(--border); }
+    .comment-item:last-child { border-bottom: none; }
+
+    .comment-meta { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+
+    .vote-chip { font-size: 0.68rem; font-weight: 700; border-radius: 99px; padding: 0.15rem 0.55rem; }
+    .vote-chip.release { background: var(--release-dim); color: var(--release); }
+    .vote-chip.hold    { background: var(--hold-dim);    color: var(--hold); }
+
+    .comment-ts   { font-size: 0.72rem; color: var(--muted); }
+    .comment-text { font-size: 0.9rem; line-height: 1.6; color: #c8c8e0; }
+
+    #loading { text-align: center; color: var(--muted); font-size: 0.9rem; padding: 3rem 0; }
+
+    footer { margin-top: 2rem; text-align: center; font-size: 0.72rem; color: var(--subtle); }
+  </style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="container">
+
+    <header>
+      <p class="eyebrow">Hypothetical Global Vote</p>
+      <h1>Would You Release It?</h1>
+    </header>
+
+    <div id="loading">Loading…</div>
+
+    <!-- Poll -->
+    <div id="vote-section" style="display:none">
+      <div class="card">
+        <p class="scenario-label">The Scenario</p>
+        <p class="scenario-body">
+          A superintelligence has been developed. The people building it are confident in the following outcomes if it is released — and they have decided to put it to a global vote. It only gets released if the majority of people vote yes.
+        </p>
+        <div class="outcome-grid">
+          <div class="outcome good">
+            <span class="outcome-pct">90%</span>
+            <span>Utopia — all diseases cured, people can live as long as they want, everyone has more wealth than the richest person alive today.</span>
+          </div>
+          <div class="outcome bad">
+            <span class="outcome-pct">10%</span>
+            <span>Extinction — every human being on Earth is killed.</span>
+          </div>
+        </div>
+        <p class="vote-prompt">How would you vote?</p>
+        <div class="vote-buttons">
+          <button class="vote-btn release" onclick="castVote('release')">Release It</button>
+          <button class="vote-btn hold"    onclick="castVote('hold')">Don't Release It</button>
+        </div>
+        <p class="error-msg" id="vote-error"></p>
+      </div>
+    </div>
+
+    <!-- Results + Comments -->
+    <div id="results-section">
+      <div class="card">
+        <span id="your-vote-badge" style="display:none"></span>
+        <div class="results-header">
+          <span class="results-title">Results</span>
+          <span class="total-badge" id="total-badge">0 votes</span>
+        </div>
+        <div class="result-row">
+          <div class="result-row-header">
+            <span>Release It</span>
+            <span class="result-count" id="count-release">0 votes</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill bar-release" id="bar-release"></div></div>
+        </div>
+        <div class="result-row">
+          <div class="result-row-header">
+            <span>Don't Release It</span>
+            <span class="result-count" id="count-hold">0 votes</span>
+          </div>
+          <div class="bar-track"><div class="bar-fill bar-hold" id="bar-hold"></div></div>
+        </div>
+      </div>
+
+      <div class="card" id="comment-form-card">
+        <p class="section-label">Why did you vote that way? <span style="color:var(--subtle);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></p>
+        <textarea id="comment-input" maxlength="500" placeholder="Share your reasoning…" oninput="onCommentInput()"></textarea>
+        <div class="char-count"><span id="char-count">0</span> / 500</div>
+        <button class="submit-btn" id="comment-submit" onclick="submitComment()" disabled>Post Comment</button>
+        <p class="comment-success" id="comment-success" style="display:none">Comment posted!</p>
+        <p class="error-msg" id="comment-error"></p>
+      </div>
+
+      <div class="card" id="comments-feed-card" style="display:none">
+        <p class="section-label">What people are saying</p>
+        <div id="comments-feed"></div>
+      </div>
+    </div>
+
+    <footer>Votes are deduplicated per browser — results may not reflect a scientifically representative sample.</footer>
+  </div>
+
+  <script>
+    // ← Paste your Apps Script web app URL here after deploying
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx6wAdu4YLwt3GSyDozAkbEObFV0_tcVjiWq1Rt1cDTrXuv48gYCYmKHGEDdzK6Nrpj5g/exec';
+
+    let myVote = null;
+    let hasCommented = false;
+
+    function getBrowserUUID() {
+      let id = localStorage.getItem('poll_uuid');
+      if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem('poll_uuid', id);
+      }
+      return id;
+    }
+
+    async function appsGet(params) {
+      const url = SCRIPT_URL + '?' + new URLSearchParams(params).toString();
+      const res = await fetch(url);
+      return res.json();
+    }
+
+    async function appsPost(body) {
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify(body),
+        redirect: 'follow'
+      });
+      return res.json();
+    }
+
+    async function init() {
+      const uuid = getBrowserUUID();
+      try {
+        const data = await appsGet({ uuid });
+        document.getElementById('loading').style.display = 'none';
+        if (data.has_voted) {
+          hasCommented = data.has_commented;
+          showResults(data, null);
+        } else {
+          document.getElementById('vote-section').style.display = 'block';
+        }
+      } catch (e) {
+        document.getElementById('loading').textContent = 'Could not load poll. Please try again later.';
+      }
+    }
+
+    async function castVote(vote) {
+      document.getElementById('vote-error').textContent = '';
+      document.querySelectorAll('.vote-btn').forEach(b => b.disabled = true);
+
+      try {
+        const data = await appsPost({ action: 'vote', vote, uuid: getBrowserUUID() });
+
+        if (data.error && !data.already_voted) {
+          throw new Error(data.error);
+        }
+
+        myVote = vote;
+        hasCommented = data.has_commented || false;
+        document.getElementById('vote-section').style.display = 'none';
+        showResults(data, data.already_voted ? null : vote);
+      } catch (err) {
+        document.getElementById('vote-error').textContent = err.message;
+        document.querySelectorAll('.vote-btn').forEach(b => b.disabled = false);
+      }
+    }
+
+    function showResults(data, vote) {
+      document.getElementById('results-section').style.display = 'block';
+
+      const total = data.total_votes;
+      document.getElementById('total-badge').textContent =
+        total === 1 ? '1 vote' : total.toLocaleString() + ' votes';
+
+      const r = data.votes.release;
+      const h = data.votes.hold;
+      const rPct = total ? Math.round((r / total) * 100) : 0;
+      const hPct = total ? Math.round((h / total) * 100) : 0;
+
+      document.getElementById('count-release').textContent = r.toLocaleString() + ' vote' + (r !== 1 ? 's' : '') + ' (' + rPct + '%)';
+      document.getElementById('count-hold').textContent    = h.toLocaleString() + ' vote' + (h !== 1 ? 's' : '') + ' (' + hPct + '%)';
+
+      requestAnimationFrame(() => {
+        document.getElementById('bar-release').style.width = rPct + '%';
+        document.getElementById('bar-hold').style.width    = hPct + '%';
+      });
+
+      if (vote) {
+        myVote = vote;
+        const badge = document.getElementById('your-vote-badge');
+        badge.className = 'your-vote-badge ' + vote;
+        badge.textContent = 'Your vote: ' + (vote === 'release' ? 'Release It' : "Don't Release It");
+        badge.style.display = 'inline-flex';
+      }
+
+      if (hasCommented) {
+        document.getElementById('comment-form-card').style.display = 'none';
+      }
+
+      renderComments(data.comments);
+    }
+
+    function renderComments(comments) {
+      const feed = document.getElementById('comments-feed');
+      const card = document.getElementById('comments-feed-card');
+      if (!comments || comments.length === 0) { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+      feed.innerHTML = comments.map(c => `
+        <div class="comment-item">
+          <div class="comment-meta">
+            <span class="vote-chip ${c.vote}">${c.vote === 'release' ? 'Release It' : "Don't Release It"}</span>
+            ${c.ts ? `<span class="comment-ts">${timeAgo(c.ts)}</span>` : ''}
+          </div>
+          <p class="comment-text">${escapeHtml(c.text)}</p>
+        </div>`).join('');
+    }
+
+    function onCommentInput() {
+      const val = document.getElementById('comment-input').value;
+      document.getElementById('char-count').textContent = val.length;
+      document.getElementById('comment-submit').disabled = val.trim().length === 0;
+    }
+
+    async function submitComment() {
+      const text = document.getElementById('comment-input').value.trim();
+      if (!text) return;
+      document.getElementById('comment-submit').disabled = true;
+      document.getElementById('comment-error').textContent = '';
+
+      try {
+        const data = await appsPost({ action: 'comment', text, vote: myVote, uuid: getBrowserUUID() });
+        if (data.error && !data.already_commented) throw new Error(data.error);
+        document.getElementById('comment-form-card').style.display = 'none';
+        document.getElementById('comment-success').style.display = 'block';
+        hasCommented = true;
+        renderComments(data.comments);
+      } catch (err) {
+        document.getElementById('comment-error').textContent = err.message;
+        document.getElementById('comment-submit').disabled = false;
+      }
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
+
+    function timeAgo(isoStr) {
+      const diff = Math.floor((Date.now() - new Date(isoStr)) / 1000);
+      if (diff < 60)    return 'just now';
+      if (diff < 3600)  return Math.floor(diff / 60) + 'm ago';
+      if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+      return Math.floor(diff / 86400) + 'd ago';
+    }
+
+    init();
+  </script>
+</body>
+</html>
