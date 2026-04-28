@@ -11,14 +11,12 @@ service cloud.firestore {
                     && request.resource.data.vote in ['release', 'hold']
                     && (!('name' in request.resource.data) || (request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 50));
 
-      // Only allowed update: adding a comment (comment, name, commentedAt) exactly once
       allow update: if request.auth != null
                     && request.auth.uid == uuid
-                    && !('commentedAt' in resource.data)
-                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['comment', 'name', 'commentedAt'])
-                    && request.resource.data.comment is string
-                    && request.resource.data.comment.size() > 0
-                    && request.resource.data.comment.size() <= 500;
+                    && request.resource.data.keys().hasOnly(['vote', 'timestamp', 'name', 'comment', 'commentedAt'])
+                    && request.resource.data.vote in ['release', 'hold']
+                    && (!('name' in request.resource.data) || (request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 50))
+                    && (!('comment' in request.resource.data) || (request.resource.data.comment is string && request.resource.data.comment.size() > 0 && request.resource.data.comment.size() <= 500));
 
       allow delete: if false;
     }

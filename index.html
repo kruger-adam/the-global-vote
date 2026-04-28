@@ -476,6 +476,15 @@
           <p class="section-label">Who voted</p>
           <div class="voter-list" id="voters-feed"></div>
         </div>
+        <div id="change-vote-section" style="display:none">
+          <div style="border-top:1px solid var(--border);margin:1.25rem 0 1rem"></div>
+          <p class="section-label">Change your vote</p>
+          <div class="vote-buttons">
+            <button class="vote-btn release" onclick="castVote('release')">Build It</button>
+            <button class="vote-btn hold"    onclick="castVote('hold')">Don't Build It</button>
+          </div>
+          <p class="error-msg" id="change-vote-error"></p>
+        </div>
       </div>
 
       <div class="card" id="comment-form-card">
@@ -502,7 +511,7 @@
     import {
       getFirestore, doc, getDoc, setDoc, updateDoc,
       collection, query, where, orderBy, limit,
-      getDocs, getCountFromServer, serverTimestamp
+      getDocs, getCountFromServer, serverTimestamp, deleteField
     } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
     import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 
@@ -519,7 +528,9 @@
     const db   = getFirestore(app);
     const auth = getAuth(app);
 
-    let myVote = null;
+    let myVote    = null;
+    let myComment = null;
+    let myName    = null;
     let hasComment = false;
 
     async function fetchResults(uid) {
@@ -559,6 +570,8 @@
         document.getElementById('loading').style.display = 'none';
         if (snap.exists()) {
           myVote     = snap.data().vote;
+          myComment  = snap.data().comment  || null;
+          myName     = snap.data().name     || null;
           hasComment = !!snap.data().commentedAt;
           showResults(await fetchResults(uid), myVote);
         } else {
@@ -571,25 +584,41 @@
     }
 
     async function castVote(vote) {
-      document.getElementById('vote-error').textContent = '';
+      const isRevote = !!myVote;
+      const errorEl = isRevote
+        ? document.getElementById('change-vote-error')
+        : document.getElementById('vote-error');
+      errorEl.textContent = '';
       document.querySelectorAll('.vote-btn').forEach(b => b.disabled = true);
       try {
-        const uid  = auth.currentUser.uid;
-        const name = document.getElementById('vote-name-input').value.trim();
-        const voteDoc = { vote, timestamp: serverTimestamp() };
-        if (name) voteDoc.name = name;
-        await setDoc(doc(db, 'votes', uid), voteDoc);
+        const uid = auth.currentUser.uid;
+        if (isRevote) {
+          // Changing vote: clear comment so they start fresh
+          await updateDoc(doc(db, 'votes', uid), {
+            vote,
+            timestamp:   serverTimestamp(),
+            comment:     deleteField(),
+            commentedAt: deleteField(),
+          });
+          hasComment = false;
+          myComment  = null;
+        } else {
+          const name = document.getElementById('vote-name-input').value.trim();
+          const voteDoc = { vote, timestamp: serverTimestamp() };
+          if (name) { voteDoc.name = name; myName = name; }
+          await setDoc(doc(db, 'votes', uid), voteDoc);
+        }
         localStorage.setItem('poll_voted', '1');
         myVote = vote;
         document.getElementById('vote-section').style.display = 'none';
         showResults(await fetchResults(uid), vote);
       } catch (err) {
-        if (err.code === 'permission-denied') {
+        if (err.code === 'permission-denied' && !isRevote) {
           localStorage.setItem('poll_voted', '1');
           document.getElementById('vote-section').style.display = 'none';
           showResults(await fetchResults(auth.currentUser.uid), null);
         } else {
-          document.getElementById('vote-error').textContent = 'Something went wrong. Please try again.';
+          errorEl.textContent = 'Something went wrong. Please try again.';
           document.querySelectorAll('.vote-btn').forEach(b => b.disabled = false);
         }
       }
@@ -617,7 +646,19 @@
         badge.textContent = 'Your vote: ' + (vote === 'release' ? 'Build It' : "Don't Build It");
         badge.style.display = 'inline-flex';
       }
-      if (hasComment) document.getElementById('comment-form-card').style.display = 'none';
+      document.querySelectorAll('.vote-btn').forEach(b => b.disabled = false);
+      if (vote || myVote) {
+        document.getElementById('change-vote-section').style.display = 'block';
+      }
+      if (myName) document.getElementById('name-input').value = myName;
+      if (myComment && !document.getElementById('comment-input').value) {
+        document.getElementById('comment-input').value = myComment;
+        document.getElementById('char-count').textContent = myComment.length;
+        document.getElementById('comment-submit').disabled = false;
+      }
+      if (hasComment || myComment) {
+        document.getElementById('comment-submit').textContent = 'Update Comment';
+      }
       renderVoters(namedVoters);
       renderComments(comments);
     }
@@ -670,8 +711,13 @@
         if (name) fields.name = name;
         await updateDoc(doc(db, 'votes', uid), fields);
         hasComment = true;
-        document.getElementById('comment-form-card').style.display = 'none';
-        document.getElementById('comment-success').style.display = 'block';
+        myComment  = text;
+        if (name) myName = name;
+        document.getElementById('comment-submit').textContent = 'Update Comment';
+        document.getElementById('comment-submit').disabled = false;
+        const successEl = document.getElementById('comment-success');
+        successEl.style.display = 'block';
+        setTimeout(() => { successEl.style.display = 'none'; }, 3000);
         renderComments((await fetchResults(uid)).comments);
       } catch {
         document.getElementById('comment-error').textContent = 'Something went wrong. Please try again.';
