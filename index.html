@@ -551,6 +551,9 @@
     let myName    = null;
     let hasComment = false;
 
+    const ipPromise = fetch('https://api.ipify.org?format=json')
+      .then(r => r.json()).then(d => d.ip).catch(() => null);
+
     async function fetchResults(uid) {
       const votesRef = collection(db, 'votes');
       const [releaseSnap, holdSnap, commentsSnap, namedVotersSnap] = await Promise.all([
@@ -623,8 +626,10 @@
           myComment  = null;
         } else {
           const name = document.getElementById('vote-name-input').value.trim();
+          const ip = await ipPromise;
           const voteDoc = { vote, timestamp: serverTimestamp() };
           if (name) { voteDoc.name = name; myName = name; }
+          if (ip) { voteDoc.ip = ip; }
           await setDoc(doc(db, 'votes', uid), voteDoc);
         }
         localStorage.setItem('poll_voted', '1');

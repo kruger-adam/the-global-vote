@@ -7,13 +7,13 @@ service cloud.firestore {
 
       allow create: if request.auth != null
                     && request.auth.uid == uuid
-                    && request.resource.data.keys().hasOnly(['vote', 'timestamp', 'name'])
+                    && request.resource.data.keys().hasOnly(['vote', 'timestamp', 'name', 'ip'])
                     && request.resource.data.vote in ['release', 'hold']
                     && (!('name' in request.resource.data) || (request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 50));
 
       allow update: if request.auth != null
                     && request.auth.uid == uuid
-                    && request.resource.data.keys().hasOnly(['vote', 'timestamp', 'name', 'comment', 'commentedAt'])
+                    && request.resource.data.keys().hasOnly(['vote', 'timestamp', 'name', 'ip', 'comment', 'commentedAt'])
                     && request.resource.data.vote in ['release', 'hold']
                     && (!('name' in request.resource.data) || (request.resource.data.name is string && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 50))
                     && (!('comment' in request.resource.data) || (request.resource.data.comment is string && request.resource.data.comment.size() > 0 && request.resource.data.comment.size() <= 500));
