@@ -239,6 +239,8 @@
     .vote-btn.release { border-color: var(--release); color: var(--release); background: var(--release-dim); }
     .vote-btn.hold    { border-color: var(--hold);    color: var(--hold);    background: var(--hold-dim); }
     .vote-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .vote-btn.release.selected { background: rgba(74,222,128,0.28); box-shadow: 0 0 0 2px var(--release); }
+    .vote-btn.hold.selected    { background: rgba(248,113,113,0.28); box-shadow: 0 0 0 2px var(--hold); }
 
     .error-msg { color: var(--hold); font-size: 0.85rem; text-align: center; margin-top: 0.75rem; }
 
@@ -649,6 +651,10 @@
       document.querySelectorAll('.vote-btn').forEach(b => b.disabled = false);
       if (vote || myVote) {
         document.getElementById('change-vote-section').style.display = 'block';
+        const currentVote = vote || myVote;
+        document.querySelectorAll('#change-vote-section .vote-btn').forEach(b => {
+          b.classList.toggle('selected', b.classList.contains(currentVote));
+        });
       }
       if (myName) document.getElementById('name-input').value = myName;
       if (myComment && !document.getElementById('comment-input').value) {
