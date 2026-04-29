@@ -235,12 +235,28 @@
       transition: all 0.15s ease;
     }
 
-    .vote-btn:hover { transform: translateY(-2px); }
+    .vote-btn:not(.selected):hover { transform: translateY(-2px); }
     .vote-btn.release { border-color: var(--release); color: var(--release); background: var(--release-dim); }
     .vote-btn.hold    { border-color: var(--hold);    color: var(--hold);    background: var(--hold-dim); }
     .vote-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
-    .vote-btn.release.selected { background: rgba(74,222,128,0.28); box-shadow: 0 0 0 2px var(--release); }
-    .vote-btn.hold.selected    { background: rgba(248,113,113,0.28); box-shadow: 0 0 0 2px var(--hold); }
+    .vote-btn.release.selected {
+      background: rgba(74,222,128,0.22);
+      border-color: var(--release);
+      box-shadow: 0 0 0 2px var(--release), 0 0 16px rgba(74,222,128,0.25);
+      cursor: default;
+      transform: none !important;
+      opacity: 1;
+    }
+    .vote-btn.hold.selected {
+      background: rgba(248,113,113,0.22);
+      border-color: var(--hold);
+      box-shadow: 0 0 0 2px var(--hold), 0 0 16px rgba(248,113,113,0.25);
+      cursor: default;
+      transform: none !important;
+      opacity: 1;
+    }
+    .vote-btn:not(.selected) { opacity: 0.45; }
+    .vote-btn:not(.selected):hover { opacity: 0.7; transform: translateY(-2px); }
 
     .error-msg { color: var(--hold); font-size: 0.85rem; text-align: center; margin-top: 0.75rem; }
 
@@ -586,6 +602,7 @@
     }
 
     async function castVote(vote) {
+      if (vote === myVote) return;
       const isRevote = !!myVote;
       const errorEl = isRevote
         ? document.getElementById('change-vote-error')
@@ -653,7 +670,10 @@
         document.getElementById('change-vote-section').style.display = 'block';
         const currentVote = vote || myVote;
         document.querySelectorAll('#change-vote-section .vote-btn').forEach(b => {
-          b.classList.toggle('selected', b.classList.contains(currentVote));
+          const isSelected = b.classList.contains(currentVote);
+          b.classList.toggle('selected', isSelected);
+          const label = b.classList.contains('release') ? 'Build It' : "Don't Build It";
+          b.textContent = isSelected ? '✓ ' + label : label;
         });
       }
       if (myName) document.getElementById('name-input').value = myName;
